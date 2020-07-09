@@ -16,11 +16,11 @@ def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None
                   (int(x + w / 2), int(y + h / 2)), color, thickness)
 
     if (left_label is not None):
-        cv2.putText(frame, left_label, (int(x - (w / 2)), int(y - (h / 2))),
+        cv2.putText(frame, left_label, (int(x - (w / 2)), int(y - (h / 2) - 5)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
 
     if (right_label is not None):
-        cv2.putText(frame, right_label, (int(x - (w / 2)), int(y + (h / 2))),
+        cv2.putText(frame, right_label, (int(x - (w / 2)), int(y + (h / 2) + 15)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
 
 
@@ -31,8 +31,8 @@ dataPath = os.path.sep.join(["yolov3", "coco.data"])
 net = Detector(bytes(configPath, encoding="utf-8"), bytes(weightsPath,
                                                           encoding="utf-8"), 0, bytes(dataPath, encoding="utf-8"))
 cap = cv2.VideoCapture("videos/crowd.mp4")
-fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-writer = cv2.VideoWriter("output.mp4", fourcc, 24, (800, 600), True)
+#fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+#writer = cv2.VideoWriter("output.mp4", fourcc, 24, (800, 600), True)
 		
 (W, H) = (None, None)
 if cap.isOpened():
@@ -61,11 +61,11 @@ if cap.isOpened():
 
             overlay(frame, x, y, w, h, color, 1, name, str(round(score, 2)))
 
-        # cv2.imshow("video", frame)
-        # if cv2.waitKey(1) == ord('q'):
-            #break
+        cv2.imshow("video", frame)
+        if cv2.waitKey(1) == ord('q'):
+            break
 
-        writer.write(frame)
+        #writer.write(frame)
 else:
     print("unable to open video")
 cap.release()
