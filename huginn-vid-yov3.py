@@ -30,7 +30,7 @@ dataPath = os.path.sep.join(["yolov3", "coco.data"])
 
 net = Detector(bytes(configPath, encoding="utf-8"), bytes(weightsPath,
                                                           encoding="utf-8"), 0, bytes(dataPath, encoding="utf-8"))
-cap = cv2.VideoCapture("videos/airport.mp4")
+cap = cv2.VideoCapture("videos/crowd.mp4")
 fourcc = cv2.VideoWriter_fourcc(*"MJPG")
 writer = cv2.VideoWriter("output.mp4", fourcc, 24, (800, 600), True)
 		
