@@ -82,7 +82,7 @@ if cap.isOpened():
 
     while True:
         _, frame = cap.read()
-        cuda_img = cuda(bgr2rgba(frame))
+        cuda_img = cuda(bgr2rgba(brightness_contrast(frame)))
         detections = net.Detect(cuda_img, 640, 480, "box,labels,conf")
         color = (255, 255, 0)
 
