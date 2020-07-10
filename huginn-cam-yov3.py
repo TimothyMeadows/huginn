@@ -1,3 +1,4 @@
+import time
 import numpy
 import argparse
 import imutils
@@ -7,6 +8,7 @@ from pydarknet import Detector, Image
 import cv2
 import os
 import imagehash
+
 
 def map(x, in_min, in_max, out_min, out_max):
     return int((x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min)
@@ -39,11 +41,18 @@ def brightness_contrast(frame, brightness=255, contrast=127):
 
     return buffer
 
+
 def phash(frame):
     frame_rgb = PILImage.fromarray(frame, 'RGB')
     frame_hash = imagehash.average_hash(frame_rgb)
     frame_rgb.close()
     return frame_hash
+
+
+def fps(frame, rate):
+    cv2.putText(frame, str("FPS: " + str(rate)), (15, 15),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+
 
 def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None, right_label=None):
     cv2.rectangle(frame, (int(x - w / 2), int(y - h / 2)),
@@ -57,18 +66,24 @@ def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None
         cv2.putText(frame, right_label, (int(x - (w / 2)), int(y + (h / 2) + 15)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
 
+
 def overlays(frame, results):
     color = (255, 255, 0)
     for cat, score, bounds in results:
         x, y, w, h = bounds
         name = str(cat.decode("utf-8"))
-        #print(name + ": " + str(score))
+        print(name + ": " + str(score))
         if score > 0.6:
             color = (0, 255, 0)
         elif score < 0.4:
             color = (255, 0, 0)
 
         overlay(frame, x, y, w, h, color, 1, name, str(round(score, 2)))
+
+def inference(frame):
+    img_darknet = Image(frame)
+    results = net.detect(img_darknet)
+    overlays(frame, results)
 
 
 weightsPath = os.path.sep.join(["yolov3", "yolov3.weights"])
@@ -81,13 +96,16 @@ cap = cv2.VideoCapture("/dev/video0")
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 cap.set(cv2.CAP_PROP_FPS, 24)
-		
+
 (W, H) = (640, 480)
 skip = False
 results = None
 previous_frame_hash = None
 ham = 1
+frames = 0
+frame_rate = 0
 
+frame_time = time.time()
 if cap.isOpened():
     cv2.namedWindow("video", cv2.WINDOW_AUTOSIZE)
     while True:
@@ -95,6 +113,13 @@ if cap.isOpened():
         if not error:
             print("camera read error")
             break
+
+        frames += 1
+        fps(frame, frame_rate)
+        if (time.time() - frame_time) > 1:
+            frame_rate = round(frames / (time.time() - frame_time))
+            frames = 0
+            frame_time = time.time()
 
         frame = brightness_contrast(frame)
         frame_hash = phash(frame)
