@@ -41,9 +41,9 @@ def brightness_contrast(frame, brightness=255, contrast=127):
 
 def phash(frame):
     frame_rgb = PILImage.fromarray(frame, 'RGB')
-    hash = imagehash.average_hash(frame_rgb)
+    frame_hash = imagehash.average_hash(frame_rgb)
     frame_rgb.close()
-    return hash
+    return frame_hash
 
 def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None, right_label=None):
     cv2.rectangle(frame, (int(x - w / 2), int(y - h / 2)),
@@ -82,33 +82,32 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 cap.set(cv2.CAP_PROP_FPS, 24)
 		
-(W, H) = (None, None)
-Skip = False
+(W, H) = (640, 480)
+skip = False
 results = None
 previous_frame_hash = None
+ham = 1
 
 if cap.isOpened():
     cv2.namedWindow("video", cv2.WINDOW_AUTOSIZE)
     while True:
-        (grabbed, frame) = cap.read()
-        if not grabbed:
+        (error, frame) = cap.read()
+        if not error:
+            print("camera read error")
             break
-
-        if W is None or H is None:
-            (H, W) = frame.shape[:2]
 
         frame = brightness_contrast(frame)
         frame_hash = phash(frame)
         if previous_frame_hash is not None:
             shifts = previous_frame_hash - frame_hash
-            if not (shifts >= 1):
+            if shifts <= ham:
                 if results is not None:
-                    Skip = True
+                    skip = True
 
-        if Skip and results is not None:
+        if skip and results is not None:
             overlays(frame, results)
 
-            Skip = False
+            skip = False
             cv2.imshow("video", frame)
             if cv2.waitKey(1) == ord('q'):
                 break
@@ -123,5 +122,5 @@ if cap.isOpened():
         if cv2.waitKey(1) == ord('q'):
             break
 else:
-    print("unable to open video")
+    print("unable to open camera")
 cap.release()
