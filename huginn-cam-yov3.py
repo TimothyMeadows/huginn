@@ -99,10 +99,8 @@ if cap.isOpened():
 
         frame = brightness_contrast(frame)
         frame_hash = phash(frame)
-        print(frame_hash)
         if previous_frame_hash is not None:
             shifts = previous_frame_hash - frame_hash
-            print(shifts)
             if not (shifts >= 1):
                 if results is not None:
                     Skip = True
@@ -120,7 +118,6 @@ if cap.isOpened():
         results = net.detect(img_darknet)
         overlays(frame, results)
 
-        Skip = True
         previous_frame_hash = frame_hash
         cv2.imshow("video", frame)
         if cv2.waitKey(1) == ord('q'):
