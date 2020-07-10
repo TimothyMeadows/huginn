@@ -37,6 +37,12 @@ def brightness_contrast(frame, brightness=255, contrast=127):
 
     return buffer
 
+def phash(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    resized = cv2.resize(gray, (9, 8))
+    diff = resized[:, 1:] > resized[:, :-1]
+    return sum([2 ** i for (i, v) in enumerate(diff.flatten()) if v])
+
 def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None, right_label=None):
     cv2.rectangle(frame, (int(x - w / 2), int(y - h / 2)),
                   (int(x + w / 2), int(y + h / 2)), color, thickness)
@@ -48,6 +54,19 @@ def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None
     if (right_label is not None):
         cv2.putText(frame, right_label, (int(x - (w / 2)), int(y + (h / 2) + 15)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+
+def overlays(frame, results):
+    color = (255, 255, 0)
+    for cat, score, bounds in results:
+        x, y, w, h = bounds
+        name = str(cat.decode("utf-8"))
+        print(name + ": " + str(score))
+        if score > 0.6:
+            color = (0, 255, 0)
+        elif score < 0.4:
+            color = (255, 0, 0)
+
+        overlay(frame, x, y, w, h, color, 1, name, str(round(score, 2)))
 
 
 weightsPath = os.path.sep.join(["yolov3", "yolov3.weights"])
@@ -62,6 +81,10 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 cap.set(cv2.CAP_PROP_FPS, 24)
 		
 (W, H) = (None, None)
+Skip = False
+results = None
+previous_frame_hash = None
+
 if cap.isOpened():
     cv2.namedWindow("video", cv2.WINDOW_AUTOSIZE)
     while True:
@@ -73,26 +96,31 @@ if cap.isOpened():
             (H, W) = frame.shape[:2]
 
         frame = brightness_contrast(frame)
+        frame_hash = phash(frame)
+        if previous_frame_hash is not None:
+            shifts = previous_frame_hash - frame_hash
+            if not (shifts > 11 or shifts < -11):
+                if results is not None:
+                    Skip = True
+
+        if Skip and results is not None:
+            overlays(frame, results)
+
+            Skip = False
+            cv2.imshow("video", frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
+            continue
+
         img_darknet = Image(frame)
         results = net.detect(img_darknet)
-        color = (255, 255, 0)
+        overlays(frame, results)
 
-        for cat, score, bounds in results:
-            x, y, w, h = bounds
-            name = str(cat.decode("utf-8"))
-            print(name + ": " + str(score))
-            if score > 0.6:
-                color = (0, 255, 0)
-            elif score < 0.4:
-                color = (255, 0, 0)
-
-            overlay(frame, x, y, w, h, color, 1, name, str(round(score, 2)))
-
+        Skip = True
+        previous_frame_hash = frame_hash
         cv2.imshow("video", frame)
         if cv2.waitKey(1) == ord('q'):
             break
-
-        #writer.write(frame)
 else:
     print("unable to open video")
 cap.release()
