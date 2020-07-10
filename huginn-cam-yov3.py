@@ -1,10 +1,12 @@
 import numpy
 import argparse
 import imutils
+from PIL import Image as PILImage
 import time
 from pydarknet import Detector, Image
 import cv2
 import os
+import imagehash
 
 def map(x, in_min, in_max, out_min, out_max):
     return int((x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min)
@@ -38,10 +40,10 @@ def brightness_contrast(frame, brightness=255, contrast=127):
     return buffer
 
 def phash(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, (9, 8))
-    diff = resized[:, 1:] > resized[:, :-1]
-    return sum([2 ** i for (i, v) in enumerate(diff.flatten()) if v])
+    frame_rgb = PILImage.fromarray(frame, 'RGB')
+    hash = imagehash.average_hash(frame_rgb)
+    frame_rgb.close()
+    return hash
 
 def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None, right_label=None):
     cv2.rectangle(frame, (int(x - w / 2), int(y - h / 2)),
@@ -60,7 +62,7 @@ def overlays(frame, results):
     for cat, score, bounds in results:
         x, y, w, h = bounds
         name = str(cat.decode("utf-8"))
-        print(name + ": " + str(score))
+        #print(name + ": " + str(score))
         if score > 0.6:
             color = (0, 255, 0)
         elif score < 0.4:
@@ -97,9 +99,11 @@ if cap.isOpened():
 
         frame = brightness_contrast(frame)
         frame_hash = phash(frame)
+        print(frame_hash)
         if previous_frame_hash is not None:
             shifts = previous_frame_hash - frame_hash
-            if not (shifts > 11 or shifts < -11):
+            print(shifts)
+            if not (shifts >= 1):
                 if results is not None:
                     Skip = True
 
