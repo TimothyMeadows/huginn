@@ -131,3 +131,4 @@ dmypy.json
 # yolov3
 yolov3/yolov3.weights
 
+videos/traffic-uk.mp4
