@@ -2,6 +2,7 @@ import numpy
 import argparse
 import imutils
 import time
+#from PIL import Image as PILmage
 from pydarknet import Detector, Image
 from openalpr import Alpr
 import cv2
@@ -23,6 +24,15 @@ def overlay(frame, x, y, w, h, color=(255, 255, 0), thickness=2, left_label=None
     if (right_label is not None):
         cv2.putText(frame, right_label, (int(x - (w / 2)), int(y + (h / 2) + 15)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+
+#def crop(frame, x, y, w, h):
+    #img = PILmage.fromarray(numpy.uint8(frame)).convert('RGB')
+    #img = img.crop((int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2)))
+    #return img
+
+
+def crop(frame, x, y, w, h):
+    return frame[y:y+h, x:x+w]
 
 
 weightsPath = os.path.sep.join(["yolov3", "yolov3.weights"])
